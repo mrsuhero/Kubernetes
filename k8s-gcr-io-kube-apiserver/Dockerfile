@@ -1,2 +1,2 @@
-FROM gcr.io/google_containers/kubernetes-apiserver-amd64:v1.12.1
+FROM gcr.io/google_containers/kubernetes-apiserver:v1.12.1
 MAINTAINER mrsuhero
