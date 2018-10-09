@@ -1,46 +1,59 @@
 #!/bin/bash
 #--------------------------------------------
-#ÓÃÓÚÊµÏÖ¼¯Èº»·¾³µÄ×Ô¶¯²¿Êğ½Å±¾
+#ç”¨äºå®ç°é›†ç¾¤ç¯å¢ƒçš„è‡ªåŠ¨éƒ¨ç½²è„šæœ¬
 #author: wang_yzhou
 #date: 20170726
-#ËµÃ÷£ºÊÊÓÃÓÚcentos7ÏµÍ³
+#è¯´æ˜ï¼šé€‚ç”¨äºcentos7ç³»ç»Ÿ
 #--------------------------------------------
-echo "¿ªÊ¼½øĞĞ¼¯ÈºµÄ°²×°"
+echo "å¼€å§‹è¿›è¡Œé›†ç¾¤çš„å®‰è£…"
 sleep 5
-echo "3Ãëºó¿ªÊ¼°²×°......"
+echo "3ç§’åå¼€å§‹å®‰è£…......"
 sleep 3
-#ÅĞ¶Ïµ±Ç°ÓÃ»§ÊÇ·ñÎªrootÓÃ»§
+#åˆ¤æ–­å½“å‰ç”¨æˆ·æ˜¯å¦ä¸ºrootç”¨æˆ·
 user=`whoami`
 machinename=`uname -m`
 if [ "$user" != "root" ]; then
-    echo "ÇëÔÚrootÏÂÖ´ĞĞ¸Ã½Å±¾"
+    echo "è¯·åœ¨rootä¸‹æ‰§è¡Œè¯¥è„šæœ¬"
     exit 1
 fi
 
-#¸ü»»°¢ÀïÔÆÔ´
+#æ›´æ¢é˜¿é‡Œäº‘æº
 change_aliyum(){
-#¼ì²âwgetÃüÁîÊÇ·ñ°²×°
+#æ£€æµ‹wgetå‘½ä»¤æ˜¯å¦å®‰è£…
 command -v wget >/dev/null 2>&1 || { echo >&2 "I require wget but it's not installed.  trying to get wget."; yum install -y wget; }
-#¸ü»»°¢ÀïÔÆÔ´
+#æ›´æ¢é˜¿é‡Œäº‘æº
 mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
 wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
 yum makecache
 }
 
-#¹Ø±Õ·À»ğÇ½
+#kubernetes yumæº
+yum_ku8(){
+cat >> /etc/yum.repos.d/kubernetes.repo <<EOF
+[kubernetes]
+name=Kubernetes
+baseurl=suhero
+enabled=1
+gpgcheck=0
+EOF
+yum makecache
+}
+
+
+#å…³é—­é˜²ç«å¢™
 close_firewall(){
 systemctl stop firewalld
 systemctl disable firewalld
 }
-#°²×°master×é¼ş
+#å®‰è£…masterç»„ä»¶
 install_master_module(){
-echo "ÇëÈ·¶¨µ±Ç°»úÆ÷Ã»ÓĞ°²×°docker,etcd,kubernetes"
+echo "è¯·ç¡®å®šå½“å‰æœºå™¨æ²¡æœ‰å®‰è£…docker,etcd,kubernetes"
 read -p "input (y/n):" yn
-[ "$yn" == "Y" ] || [ "$yn" == "y" ]&& echo "ok,continue"&& yum install -y etcd docker-ce kubernetes
-[ "$yn" == "N" ] || [ "$yn" == "n" ]&& echo "ÇëÏÈÍê³É¸É¾»Ğ¶ÔØºó£¬ÔÙÔËĞĞ±¾½Å±¾" && exit 1
+[ "$yn" == "Y" ] || [ "$yn" == "y" ]&& echo "ok,continue"&& yum install -y etcd-amd64-3.2.24 docker-ce-18.06.1-ce-3.el7 kubernetes-1.12.1
+[ "$yn" == "N" ] || [ "$yn" == "n" ]&& echo "è¯·å…ˆå®Œæˆå¹²å‡€å¸è½½åï¼Œå†è¿è¡Œæœ¬è„šæœ¬" && exit 1
 }
 
-#ĞŞ¸ÄetcdÅäÖÃÎÄ¼ş
+#ä¿®æ”¹etcdé…ç½®æ–‡ä»¶
 update_etcd_conf(){
 echo "ETCD_NAME=default
 ETCD_DATA_DIR=\"/var/lib/etcd/default.etcd\"
@@ -48,7 +61,7 @@ ETCD_LISTEN_CLIENT_URLS=\"http://0.0.0.0:2379\"
 ETCD_ADVERTISE_CLIENT_URLS=\"http://localhost:2379\"">/etc/etcd/etcd.conf
 }
 
-#ĞŞ¸ÄapiserverÅäÖÃÎÄ¼ş
+#ä¿®æ”¹apiserveré…ç½®æ–‡ä»¶
 update_apiserver_conf(){
 echo "KUBE_API_ADDRESS=\"--address=0.0.0.0\"
 KUBE_API_PORT=\"--port=8080\"
@@ -59,16 +72,16 @@ KUBE_ADMISSION_CONTROL=\"--admission_control=NamespaceLifecycle,NamespaceExists,
 KUBE_API_ARGS=\"\"">/etc/kubernetes/apiserver
 }
 
-#ĞŞ¸ÄkubernetesÅäÖÃÎÄ¼ş
+#ä¿®æ”¹kubernetesé…ç½®æ–‡ä»¶
 update_kube_conf(){
-read -p "ÊäÈëmaster½ÚµãµÄipµØÖ·:" ip
+read -p "è¾“å…¥masterèŠ‚ç‚¹çš„ipåœ°å€:" ip
 echo "KUBE_LOGTOSTDERR=\"--logtostderr=true\"
 KUBE_LOG_LEVEL=\"--v=0\"
 KUBE_ALLOW_PRIV=\"--allow-privileged=false\"
 KUBE_MASTER=\"--master=http://$ip:8080\"">/etc/kubernetes/config
 }
 
-#Æô¶¯master½ÚµãµÄÏà¹Ø·şÎñ
+#å¯åŠ¨masterèŠ‚ç‚¹çš„ç›¸å…³æœåŠ¡
 up_master_service(){
 for SERVICES  in etcd docker kube-apiserver kube-controller-manager kube-scheduler;  do
     systemctl restart $SERVICES
@@ -77,37 +90,38 @@ for SERVICES  in etcd docker kube-apiserver kube-controller-manager kube-schedul
 done
 }
 
-#Ìí¼ÓetcdÍøÂçÅäÖÃ
+#æ·»åŠ etcdç½‘ç»œé…ç½®
 add_etcd_net(){
 etcdctl mk /atomic.io/network/config '{"Network":"172.17.0.0/16"}'
 }
 
-#¼ì²â¼¯ÈºÊÇ·ñ°²×°³É¹¦
+#æ£€æµ‹é›†ç¾¤æ˜¯å¦å®‰è£…æˆåŠŸ
 check_cluster_status(){
 kubectl get nodes
 }
 
-#°²×°node½Úµã×é¼ş
+#å®‰è£…nodeèŠ‚ç‚¹ç»„ä»¶
 install_node_module(){
-echo "ÇëÈ·¶¨µ±Ç°»úÆ÷Ã»ÓĞ°²×°flannel,docker,kubernetes"
+yum_ku8
+echo "è¯·ç¡®å®šå½“å‰æœºå™¨æ²¡æœ‰å®‰è£…flannel,docker,kubernetes"
 read -p "input (y/n):" yn
-[ "$yn" == "Y" ] || [ "$yn" == "y" ]&& echo "ok,continue"&& yum install -y flannel docker-ce kubernetes
-[ "$yn" == "N" ] || [ "$yn" == "n" ]&& echo "ÇëÏÈÍê³É¸É¾»Ğ¶ÔØºó£¬ÔÙÔËĞĞ±¾½Å±¾" && exit 1
+[ "$yn" == "Y" ] || [ "$yn" == "y" ]&& echo "ok,continue"&& yum install -y flannel &&  yum install yum-utils lvm2 device-mapper-persistent-data -y && yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && yum-config-manager --disable docker-ce-edge docker-ce-test && yum install docker-ce-18.06.1.ce-3.el7 && yum install kubeadm-amd64-1.12.0 kubectl-amd64-1.12.0 kube-proxy-1.12.0-x86-64 kubelet-1.12.0-x86_64
+[ "$yn" == "N" ] || [ "$yn" == "n" ]&& echo "è¯·å…ˆå®Œæˆå¹²å‡€å¸è½½åï¼Œå†è¿è¡Œæœ¬è„šæœ¬" && exit 1
 }
 
-#ÅäÖÃflanneld
+#é…ç½®flanneld
 update_flanneld_conf(){
-read -p "ÊäÈëmaster½ÚµãµÄipµØÖ·:" ip
+read -p "è¾“å…¥masterèŠ‚ç‚¹çš„ipåœ°å€:" ip
 echo "FLANNEL_ETCD=\"http://$ip:2379\"
 FLANNEL_ETCD_ENDPOINTS=\"http://$ip:2379\"
 FLANNEL_ETCD_PREFIX=\"/atomic.io/network\"">/etc/sysconfig/flanneld
 }
 
-#ÅäÖÃkubelet
+#é…ç½®kubelet
 update_kubelet_conf(){
-read -p "ÊäÈëmaster½ÚµãµÄipµØÖ·£º" master
-read -p "ÊäÈëµ±Ç°node½ÚµãµÄipµØÖ·£º" node
-read -p "ÊäÈëpause¾µÏñµÄ²Ö¿âµØÖ·£º" image
+read -p "è¾“å…¥masterèŠ‚ç‚¹çš„ipåœ°å€ï¼š" master
+read -p "è¾“å…¥å½“å‰nodeèŠ‚ç‚¹çš„ipåœ°å€ï¼š" node
+read -p "è¾“å…¥pauseé•œåƒçš„ä»“åº“åœ°å€ï¼š" image
 echo "KUBELET_ADDRESS=\"--address=0.0.0.0\"
 KUBELET_PORT=\"--port=10250\"
 KUBELET_HOSTNAME=\"--hostname-override=$node\"
@@ -116,7 +130,7 @@ KUBELET_POD_INFRA_CONTAINER=\"--pod-infra-container-image=suhero/k8s-gcr-io-paus
 KUBELET_ARGS=\"--cluster-dns=10.254.0.100 --cluster-domain=cluster.local\"">/etc/kubernetes/kubelet
 }
 
-#Æô¶¯node½ÚµãÏà¹Ø·şÎñ
+#å¯åŠ¨nodeèŠ‚ç‚¹ç›¸å…³æœåŠ¡
 up_node_service(){
 for SERVICES in kube-proxy kubelet docker flanneld; do
     systemctl restart $SERVICES
@@ -125,8 +139,8 @@ for SERVICES in kube-proxy kubelet docker flanneld; do
 done
 }
 
-#½Å±¾Èë¿Ú
-echo -n "Ñ¡ÔñÒª°²×°µÄ½ÇÉ«¡°master¡±£¬¡°node¡±(ÑÏ¸ñ´óĞ¡Ğ´)£º"
+#è„šæœ¬å…¥å£
+echo -n "é€‰æ‹©è¦å®‰è£…çš„è§’è‰²â€œmasterâ€ï¼Œâ€œnodeâ€(ä¸¥æ ¼å¤§å°å†™)ï¼š"
 read answer
 if [ "$answer" == master ];then
   
@@ -142,7 +156,7 @@ if [ "$answer" == master ];then
 elif [ "$answer" == node ];then
 
   change_aliyum
-  close_firewall
+  close_fi
   install_node_module
   update_flanneld_conf
   update_kube_conf
