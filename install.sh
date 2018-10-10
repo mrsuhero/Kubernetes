@@ -9,7 +9,7 @@
 
 function get_local_ip() {
 	
-read -p "输入master节点的ip地址:" NODE_IP
+read -p "输入master节点的ip地址:" NODE_IP;
 cat > /etc/hosts << EOF
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
