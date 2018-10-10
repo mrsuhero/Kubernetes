@@ -1,72 +1,71 @@
 #!/bin/bash
 # ----------------------------------------
-# kubernetes v1.9.1 
-# CentOS 7.2.1511 
+# kubernetes v1.9.1 å•æœºä¸€é”®éƒ¨ç½²è„šæœ¬
+# ç”¨äºŽå®žéªŒçŽ¯å¢ƒ
+# CentOS 7.2.1511ä¸‹æµ‹è¯•OK
 # Powered by Jerry Wong
 # 2018-03-15 hzde0128@live.cn
 # ----------------------------------------
 
 function get_local_ip() {
-
-read -p "ÇëÊäÈëmaster½ÚµãIP:" NODE_IP
+	
+read -p "è¾“å…¥masterèŠ‚ç‚¹çš„ipåœ°å€:" NODE_IP
 cat > /etc/hosts << EOF
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 $NODE_IP 127.0.0.1 node1
-EOF
-               
+EOF        
 }
 
 function basic_settings() {
-    getenforce  | grep Disabled > /dev/null
-    if [ $? -ne 0 ]; then
-        sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
-    fi
-    systemctl stop firewalld
-    systemctl disable firewalld
+	getenforce  | grep Disabled > /dev/null
+	if [ $? -ne 0 ]; then
+		sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
+	fi
+	systemctl stop firewalld
+	systemctl disable firewalld
 }
+
 
 function install_docker() {
-    yum -y install yum-utils device-mapper-persistent-data lvm2
-    yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-    yum -y install docker-ce
+	yum -y install yum-utils device-mapper-persistent-data lvm2
+	yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+	yum -y install docker-ce
 
-    systemctl start docker
-    systemctl status docker
-    systemctl enable docker
+	systemctl start docker
+	systemctl status docker
+	systemctl enable docker
 
-    # Ê¹ÓÃ¹úÄÚ(ÌÚÑ¶)¼ÓËÙÆ÷
-    sed -i 's#ExecStart=/usr/bin/dockerd#ExecStart=/usr/bin/dockerd --registry-mirror=https://mirror.ccs.tencentyun.com#' /usr/lib/systemd/system/docker.service 
-    systemctl daemon-reload
-    systemctl restart docker
+	# ä½¿ç”¨å›½å†…(è…¾è®¯)åŠ é€Ÿå™¨
+	sed -i 's#ExecStart=/usr/bin/dockerd#ExecStart=/usr/bin/dockerd --registry-mirror=https://mirror.ccs.tencentyun.com#' /usr/lib/systemd/system/docker.service 
+	systemctl daemon-reload
+	systemctl restart docker
 }
+
 
 function install_etcd() {
-    chmod +x etcd etcdctl
-    mv etcd etcdctl /usr/bin/
+	mv etcd etcdctl /usr/bin/
 }
 
-# °²×°Kubernetes
+# å®‰è£…Kubernetes
 function install_kubernetes() {
-    chmod +x kube*
-    mv kube{ctl,-apiserver,-scheduler,-controller-manager,let,-proxy} /usr/bin/       
+	mv kube{ctl,-apiserver,-scheduler,-controller-manager,let,-proxy} /usr/bin/       
 
-    # ²é¿´°æ±¾ÐÅÏ¢
-    kube-apiserver --version
+	# æŸ¥çœ‹ç‰ˆæœ¬ä¿¡æ¯
+	kube-apiserver --version
 }
 
-# °²×°flanneld
+# å®‰è£…flanneld
 function install_flanneld() {
-    chmod +x flanneld mk-docker-opts.sh
-    mv flanneld /usr/bin/
-    mkdir /usr/libexec/flannel/
-    mv mk-docker-opts.sh /usr/libexec/flannel/
+	mv flanneld /usr/bin/
+	mkdir /usr/libexec/flannel/
+	mv mk-docker-opts.sh /usr/libexec/flannel/
 
-    # ²é¿´°æ±¾ÐÅÏ¢
-    flanneld --version
+	# æŸ¥çœ‹ç‰ˆæœ¬ä¿¡æ¯
+	flanneld --version
 }
 
-# ÅäÖÃ²¢ÆôÓÃetcd
+# é…ç½®å¹¶å¯ç”¨etcd
 function config_etcd() {
 cat > /usr/lib/systemd/system/etcd.service <<EOF
 [Unit]
@@ -109,15 +108,15 @@ systemctl start etcd
 systemctl status etcd
 systemctl enable etcd
 
-# ¼ì²é°²×°Çé¿ö
+# æ£€æŸ¥å®‰è£…æƒ…å†µ
 etcdctl member list
 [ $? -eq 0 ] || exit
-# ²é¿´¼¯Èº½¡¿µ×´¿ö
+# æŸ¥çœ‹é›†ç¾¤å¥åº·çŠ¶å†µ
 etcdctl cluster-health
 [ $? -eq 0 ] || exit
 }
 
-# ÅäÖÃ²¢ÆôÓÃ `flanneld`
+# é…ç½®å¹¶å¯ç”¨ `flanneld`
 function config_flanneld() {
 cat > /etc/systemd/system/flanneld.service <<EOF
 [Unit]
@@ -162,7 +161,10 @@ systemctl start flanneld
 systemctl status flanneld
 systemctl enable flanneld
 
-# ¸ü¸ÄdockerÍø¶ÎÎªflannel·ÖÅäµÄÍø¶Î
+
+
+
+# æ›´æ”¹dockerç½‘æ®µä¸ºflannelåˆ†é…çš„ç½‘æ®µ
 source /var/run/flannel/subnet.env
 
 cat > /etc/docker/daemon.json <<EOF 
@@ -171,11 +173,12 @@ cat > /etc/docker/daemon.json <<EOF
 }
 EOF
 
-# ÖØÆô docker
+# é‡å¯ docker
 systemctl daemon-reload
 systemctl restart docker
 [ $? -eq 0 ] || exit
 }
+
 
 function config_apiserver() {
 mkdir -p /etc/kubernetes/
@@ -187,7 +190,7 @@ KUBE_MASTER="--master=http://${NODE_IP}:8080"
 KUBE_ADMISSION_CONTROL=ServiceAccount
 EOF
 
-# ÅäÖÃkube-apiserverÆô¶¯Ïî
+# é…ç½®kube-apiserverå¯åŠ¨é¡¹
 cat > /etc/systemd/system/kube-apiserver.service <<EOF
 [Unit]
 Description=Kubernetes API Server
@@ -215,7 +218,7 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-# ÅäÖÃapiserverÅäÖÃÎÄ¼þ
+# é…ç½®apiserveré…ç½®æ–‡ä»¶
 cat > /etc/kubernetes/apiserver <<EOF
 KUBE_API_ADDRESS="--advertise-address=${NODE_IP} --bind-address=${NODE_IP} --insecure-bind-address=0.0.0.0"
 KUBE_ETCD_SERVERS="--etcd-servers=http://${NODE_IP}:2379"
@@ -224,14 +227,16 @@ KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,NamespaceExists,L
 KUBE_API_ARGS="--enable-swagger-ui=true --apiserver-count=3 --audit-log-maxage=30 --audit-log-maxbackup=3 --audit-log-maxsize=100 --audit-log-path=/var/log/apiserver.log"
 EOF
 
-# Æô¶¯kube-apiserver
+# å¯åŠ¨kube-apiserver
 systemctl start kube-apiserver
 [ $? -eq 0 ] || exit
 systemctl status kube-apiserver
 systemctl enable kube-apiserver
 }
 
-# ÅäÖÃkube-controller-manager
+
+
+# é…ç½®kube-controller-manager
 function config_controller-manager() {
 cat > /etc/systemd/system/kube-controller-manager.service <<EOF
 [Unit]
@@ -255,14 +260,16 @@ cat > /etc/kubernetes/controller-manager <<EOF
 KUBE_CONTROLLER_MANAGER_ARGS="--address=127.0.0.1 --service-cluster-ip-range=10.254.0.0/16 --cluster-name=kubernetes"
 EOF
 
-# Æô¶¯kube-controller-manager
+# å¯åŠ¨kube-controller-manager
 systemctl start kube-controller-manager
 [ $? -eq 0 ] || exit
 systemctl status kube-controller-manager
 systemctl enable kube-controller-manager
 }
 
-# ÅäÖÃkube-scheduler
+
+
+# é…ç½®kube-scheduler
 function config_scheduler() {
 cat > /usr/lib/systemd/system/kube-scheduler.service <<EOF
 [Unit]
@@ -282,24 +289,25 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-# ÅäÖÃkube-schedulerÅäÖÃÎÄ¼þ
+# é…ç½®kube-scheduleré…ç½®æ–‡ä»¶
 cat > /etc/kubernetes/scheduler <<EOF
 KUBE_SCHEDULER_ARGS="--address=127.0.0.1"
 EOF
 
-# Æô¶¯kube-scheduler
+# å¯åŠ¨kube-scheduler
 systemctl start kube-scheduler
 [ $? -eq 0 ] || exit
 systemctl status kube-scheduler
 systemctl enable kube-scheduler
 
-#ÑéÖ¤Master½Úµã
+#éªŒè¯MasterèŠ‚ç‚¹
 kubectl get cs
 }
 
-## 9. ÅäÖÃ²¢ÆôÓÃ  `Kubernetes Node`  ½Úµã 
 
-# ÅäÖÃkubelet
+## 9. é…ç½®å¹¶å¯ç”¨  `Kubernetes Node`  èŠ‚ç‚¹ 
+
+# é…ç½®kubelet
 function config_kubelet() {
 cat > /usr/lib/systemd/system/kubelet.service <<EOF
 [Unit]
@@ -350,14 +358,14 @@ KUBELET_POD_INFRA_CONTAINER="--pod-infra-container-image=hub.c.163.com/k8s163/pa
 KUBELET_ARGS="--kubeconfig=/etc/kubernetes/kubelet.kubeconfig --fail-swap-on=false --cluster-dns=10.254.0.2 --cluster-domain=cluster.local. --serialize-image-pulls=false"
 EOF
 
-# Æô¶¯kubelet
+# å¯åŠ¨kubelet
 systemctl start kubelet
 [ $? -eq 0 ] || exit
 systemctl status kubelet
 systemctl enable kubelet
 }
 
-# ÅäÖÃkube-proxy
+# é…ç½®kube-proxy
 function config_proxy() {
 cat > /etc/systemd/system/kube-proxy.service <<EOF
 [Unit]
@@ -378,19 +386,19 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-# ÅäÖÃkube-proxyÅäÖÃÎÄ¼þ
+# é…ç½®kube-proxyé…ç½®æ–‡ä»¶
 cat > /etc/kubernetes/proxy <<EOF
 KUBE_PROXY_ARGS="--bind-address=${NODE_IP} --hostname-override=${NODE_IP} --cluster-cidr=10.254.0.0/16"
 EOF
 
-# Æô¶¯kube-proxy
+# å¯åŠ¨kube-proxy
 systemctl start kube-proxy
 [ $? -eq 0 ] || exit
 systemctl status kube-proxy
 systemctl enable kube-proxy
 }
 
-### G. ²é¿´  `Nodes` Ïà¹ØÐÅÏ¢
+### G. æŸ¥çœ‹  `Nodes` ç›¸å…³ä¿¡æ¯
 function view_status() {
 kubectl get nodes -o wide
 kubectl get nodes --show-labels
@@ -398,7 +406,7 @@ kubectl version --short
 kubectl cluster-info
 }
 
-#²¿ÊðKubeDNS²å¼þ
+#éƒ¨ç½²KubeDNSæ’ä»¶
 function deploy_kubedns() {
 cat > kube-dns.yaml <<EOF
 apiVersion: v1
@@ -605,7 +613,7 @@ kubectl get pod -n kube-system
 kubectl get service -n kube-system | grep dns
 }
 
-# ²¿ÊðHeapster×é¼þ
+# éƒ¨ç½²Heapsterç»„ä»¶
 function deploy_heapster() {
 cat > heapster-rbac.yaml <<EOF
 kind: ClusterRoleBinding
@@ -774,18 +782,18 @@ EOF
 
 kubectl create -f heapster-rbac.yaml -f grafana.yaml -f heapster.yaml -f influxdb.yaml
 
-# ¼ì²éÖ´ÐÐ½á¹û
+# æ£€æŸ¥æ‰§è¡Œç»“æžœ
 kubectl get deployments -n kube-system | grep -E 'heapster|monitoring'
 
-# ¼ì²éPods
+# æ£€æŸ¥Pods
 kubectl get pods -n kube-system | grep -E 'heapster|monitoring'
 kubectl get svc -n kube-system  | grep -E 'heapster|monitoring'
 
-# ²é¿´¼¯ÈºÐÅÏ¢
+# æŸ¥çœ‹é›†ç¾¤ä¿¡æ¯
 kubectl cluster-info
 }
 
-# ²¿ÊðKubernetes Dashboard
+# éƒ¨ç½²Kubernetes Dashboard
 function deploy_dashboard() {
 cat > kubernetes-dashboard.yaml <<EOF
 # ------------------- Dashboard Service Account ------------------- #
@@ -922,7 +930,7 @@ EOF
 
 kubectl create -f kubernetes-dashboard.yaml
 
-# ¼ì²ékubernetes-dashboard·þÎñ
+# æ£€æŸ¥kubernetes-dashboardæœåŠ¡
 kubectl get pods -n kube-system | grep dashboard
 }
 
