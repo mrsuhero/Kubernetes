@@ -8,13 +8,13 @@
 # ----------------------------------------
 
 function get_local_ip() {
-	
 read -p "输入master节点的ip地址:" NODE_IP;
-cat > /etc/hosts << EOF
+cat > /etc/hosts <<EOF
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 $NODE_IP 127.0.0.1 node1
-EOF        
+EOF
+
 }
 
 function basic_settings() {
@@ -92,13 +92,13 @@ mkdir -p /var/lib/etcd/
 mkdir -p /etc/etcd/
 export ETCD_NAME=etcd
 cat > /etc/etcd/etcd.conf <<EOF 
-name: '${ETCD_NAME}'
+name: ${ETCD_NAME}
 data-dir: "/var/lib/etcd/"
 listen-peer-urls: http://${NODE_IP}:2380
 listen-client-urls: http://${NODE_IP}:2379,http://127.0.0.1:2379
 initial-advertise-peer-urls: http://${NODE_IP}:2380
 advertise-client-urls: http://${NODE_IP}:2379
-initial-cluster: "etcd=http://${NODE_IP}:2380"
+initial-cluster: "${ETCD_NAME}=http://${NODE_IP}:2380"
 initial-cluster-token: 'etcd-cluster'
 initial-cluster-state: 'new'
 EOF
