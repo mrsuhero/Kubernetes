@@ -91,7 +91,7 @@ EOF
 mkdir -p /var/lib/etcd/
 mkdir -p /etc/etcd/
 export ETCD_NAME=etcd
-cat > /etc/etcd/etcd.conf <<EOF 
+cat > /etc/etcd/etcd.conf <<EOF
 name: ${ETCD_NAME}
 data-dir: "/var/lib/etcd/"
 listen-peer-urls: http://${NODE_IP}:2380
